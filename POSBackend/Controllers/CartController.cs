@@ -10,15 +10,15 @@ public class CartController : ControllerBase
 
     public CartController(IMongoClient client)
     {
-        var database = client.GetDatabase("POS");
-        _cartCollection = database.GetCollection<CartItem>("CartItems");
+        // ✅ Use your actual database and collection names
+        var database = client.GetDatabase("mobapp");
+        _cartCollection = database.GetCollection<CartItem>("cart");
     }
 
     // Add item to cart
     [HttpPost("add")]
     public async Task<IActionResult> AddToCart([FromBody] CartItem item)
     {
-        // Validate required fields
         if (item == null || string.IsNullOrEmpty(item.UserId) || string.IsNullOrEmpty(item.ProductId))
             return BadRequest(new { success = false, message = "Invalid request. userId and productId are required." });
 
@@ -35,14 +35,12 @@ public class CartController : ControllerBase
         }
         else
         {
-            item.Id = null; // ✅ Let MongoDB generate a new ObjectId
+            item.Id = null; // Let MongoDB generate ObjectId
             await _cartCollection.InsertOneAsync(item);
         }
 
         return Ok(new { success = true, message = "Item added to cart" });
     }
-
-
 
     // Get user's cart
     [HttpGet("{userId}")]
@@ -52,7 +50,7 @@ public class CartController : ControllerBase
         return Ok(new { success = true, cart });
     }
 
-    // Optional: remove item from cart
+    // Remove item from cart
     [HttpDelete("remove")]
     public async Task<IActionResult> RemoveFromCart([FromQuery] string userId, [FromQuery] string productId)
     {
