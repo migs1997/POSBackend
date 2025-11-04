@@ -7,7 +7,7 @@ namespace POSBackend.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public required string Id { get; set; }
+        public string? Id { get; set; }
 
         [BsonElement("prod_desc")]
         public required string ProdDesc { get; set; }

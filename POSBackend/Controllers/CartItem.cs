@@ -7,7 +7,7 @@ namespace POSBackend.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public required string Id { get; set; }
+        public string? Id { get; set; } // MAKE NULLABLE so client doesn't need to send it
 
         [BsonElement("userId")]
         public required string UserId { get; set; }
@@ -16,6 +16,6 @@ namespace POSBackend.Models
         public required string ProductId { get; set; }
 
         [BsonElement("quantity")]
-        public int Quantity { get; set; } = 1; // default to 1
+        public int Quantity { get; set; } = 1;
     }
 }

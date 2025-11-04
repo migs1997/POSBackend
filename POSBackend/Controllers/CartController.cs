@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using POSBackend.Models;
 
@@ -14,7 +13,7 @@ namespace POSBackend.Controllers
 
         public CartController(IMongoClient client)
         {
-            var database = client.GetDatabase("mobapp");
+            var database = client.GetDatabase("mobapp"); // Your DB name
             _cartCollection = database.GetCollection<CartItem>("cart");
             _productCollection = database.GetCollection<Product>("Products");
         }
@@ -24,8 +23,9 @@ namespace POSBackend.Controllers
         public async Task<IActionResult> AddToCart([FromBody] CartItem item)
         {
             if (item == null || string.IsNullOrEmpty(item.UserId) || string.IsNullOrEmpty(item.ProductId))
-                return BadRequest(new { success = false, message = "Invalid request. userId and productId are required." });
+                return BadRequest(new { success = false, message = "userId and productId are required." });
 
+            // Check if item already exists in cart
             var filter = Builders<CartItem>.Filter.Eq(c => c.UserId, item.UserId) &
                          Builders<CartItem>.Filter.Eq(c => c.ProductId, item.ProductId);
 
@@ -38,32 +38,33 @@ namespace POSBackend.Controllers
             }
             else
             {
-                item.Id = ObjectId.GenerateNewId().ToString();
+                item.Id = null; // MongoDB will generate Id
                 await _cartCollection.InsertOneAsync(item);
             }
 
             return Ok(new { success = true, message = "Item added to cart" });
         }
 
-        // Get user's cart with product details
+        // Get cart items for a user
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetCart(string userId)
         {
             var cartItems = await _cartCollection.Find(c => c.UserId == userId).ToListAsync();
 
+            // Fetch product details
             var result = new List<object>();
 
             foreach (var cart in cartItems)
             {
                 var product = await _productCollection.Find(p => p.Id == cart.ProductId).FirstOrDefaultAsync();
-
                 if (product != null)
                 {
                     result.Add(new
                     {
-                        Id = cart.Id,
-                        ProductId = cart.ProductId,
-                        Quantity = cart.Quantity,
+                        cart.Id,
+                        cart.UserId,
+                        cart.ProductId,
+                        cart.Quantity,
                         ProdDesc = product.ProdDesc,
                         ImageUrl = product.ImageUrl,
                         ProdUnitPrice = product.ProdUnitPrice
@@ -85,6 +86,7 @@ namespace POSBackend.Controllers
                          Builders<CartItem>.Filter.Eq(c => c.ProductId, productId);
 
             await _cartCollection.DeleteOneAsync(filter);
+
             return Ok(new { success = true, message = "Item removed from cart" });
         }
     }
