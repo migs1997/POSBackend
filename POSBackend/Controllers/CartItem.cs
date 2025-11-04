@@ -1,31 +1,18 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
 
-namespace POSBackend.Models
+public class CartItem
 {
-    public class CartItem
-    {
-        [BsonId]
-        public ObjectId Id { get; set; }
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; }
 
-        [BsonElement("user_id")]
-        public string UserId { get; set; } = string.Empty;  // Initialized to avoid CS8618
+    [BsonElement("userId")]
+    public string UserId { get; set; }  // The logged-in user's ID
 
-        [BsonElement("items")]
-        public List<Item> Items { get; set; } = new List<Item>();
-    }
+    [BsonElement("productId")]
+    public string ProductId { get; set; }
 
-    public class Item
-    {
-        [BsonElement("product_id")]
-        public string ProductId { get; set; } = string.Empty;  // Initialized to avoid CS8618
-
-        [BsonElement("quantity")]
-        public int Quantity { get; set; }
-
-        [BsonElement("added_at")]
-        public DateTime AddedAt { get; set; } = DateTime.UtcNow;
-    }
+    [BsonElement("quantity")]
+    public int Quantity { get; set; } = 1;
 }
