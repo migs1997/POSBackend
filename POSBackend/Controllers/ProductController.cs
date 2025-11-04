@@ -28,19 +28,18 @@ namespace POSBackend.Controllers
             {
                 var products = await _products.Find(new BsonDocument()).ToListAsync();
 
+                var baseUrl = "https://posbackend-1-o9uk.onrender.com"; // 👈 use your live domain
+
                 var result = products.ConvertAll(product =>
                 {
-                    // Safely get _id
                     var id = product.Contains("_id") && product["_id"] != null
                         ? product["_id"].ToString()!
                         : Guid.NewGuid().ToString();
 
-                    // Safely get prod_desc
                     var prodDesc = product.Contains("prod_desc") && product["prod_desc"] != null
                         ? product["prod_desc"].AsString
                         : "Unnamed Product";
 
-                    // Safely get product_desc
                     var productDesc = product.Contains("product_desc") && product["product_desc"] != null
                         ? product["product_desc"].AsString
                         : "";
@@ -53,13 +52,13 @@ namespace POSBackend.Controllers
                         ? product["prod_category"].AsString
                         : "Uncategorized";
 
-                    string imageUrl = $"{Request.Scheme}://{Request.Host}/api/Product/image/{id}";
+                    string imageUrl = $"{baseUrl}/api/Product/image/{id}";
 
                     return new
                     {
                         _id = id,
                         prod_desc = prodDesc,
-                        product_desc = productDesc, // <-- new field
+                        product_desc = productDesc,
                         prod_unit_price = prodUnitPrice,
                         prod_category = prodCategory,
                         image_url = imageUrl
@@ -73,6 +72,7 @@ namespace POSBackend.Controllers
                 return BadRequest(new { success = false, message = $"Error fetching products: {ex.Message}" });
             }
         }
+
 
 
         // ✅ Fetch single product image
