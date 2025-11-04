@@ -1,18 +1,21 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-public class CartItem
+namespace POSBackend.Models
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string? Id { get; set; }  // optional, MongoDB will generate
+    public class CartItem
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
 
-    [BsonElement("userId")]
-    public string? UserId { get; set; }  // optional in POST, set in controller
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
 
-    [BsonElement("productId")]
-    public string ProductId { get; set; } = null!;
+        [BsonElement("productId")]
+        public string? ProductId { get; set; }
 
-    [BsonElement("quantity")]
-    public int Quantity { get; set; } = 1;
+        [BsonElement("quantity")]
+        public int Quantity { get; set; } = 1;
+    }
 }
