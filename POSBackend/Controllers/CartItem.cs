@@ -7,15 +7,15 @@ namespace POSBackend.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }  // Nullable to allow MongoDB auto-generate
+        public required string Id { get; set; }
 
         [BsonElement("userId")]
-        public string? UserId { get; set; }
+        public required string UserId { get; set; }
 
         [BsonElement("productId")]
-        public string? ProductId { get; set; }
+        public required string ProductId { get; set; }
 
         [BsonElement("quantity")]
-        public int Quantity { get; set; }
+        public int Quantity { get; set; } = 1; // default to 1
     }
 }

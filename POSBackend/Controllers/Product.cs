@@ -7,18 +7,18 @@ namespace POSBackend.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; } // Nullable
+        public required string Id { get; set; }
 
         [BsonElement("prod_desc")]
-        public string? ProdDesc { get; set; } // Nullable
+        public required string ProdDesc { get; set; }
 
         [BsonElement("prod_unit_price")]
-        public double ProdUnitPrice { get; set; }
+        public decimal ProdUnitPrice { get; set; }
 
         [BsonElement("image_url")]
-        public string? ImageUrl { get; set; } // Nullable
+        public required string ImageUrl { get; set; }
 
         [BsonElement("prod_category")]
-        public string? ProdCategory { get; set; } // Nullable
+        public required string ProdCategory { get; set; }
     }
 }

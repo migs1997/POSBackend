@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using POSBackend.Models;
 
@@ -9,11 +10,13 @@ namespace POSBackend.Controllers
     public class CartController : ControllerBase
     {
         private readonly IMongoCollection<CartItem> _cartCollection;
+        private readonly IMongoCollection<Product> _productCollection;
 
         public CartController(IMongoClient client)
         {
             var database = client.GetDatabase("mobapp");
             _cartCollection = database.GetCollection<CartItem>("cart");
+            _productCollection = database.GetCollection<Product>("Products");
         }
 
         // Add item to cart
@@ -35,35 +38,37 @@ namespace POSBackend.Controllers
             }
             else
             {
-                item.Id = null; // MongoDB will generate Id
+                item.Id = ObjectId.GenerateNewId().ToString();
                 await _cartCollection.InsertOneAsync(item);
             }
 
             return Ok(new { success = true, message = "Item added to cart" });
         }
 
-        // Get user's cart
+        // Get user's cart with product details
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetCart(string userId)
         {
             var cartItems = await _cartCollection.Find(c => c.UserId == userId).ToListAsync();
 
-            var productCollection = _cartCollection.Database.GetCollection<Product>("Products");
-
             var result = new List<object>();
+
             foreach (var cart in cartItems)
             {
-                var product = await productCollection.Find(p => p.Id == cart.ProductId).FirstOrDefaultAsync();
-                result.Add(new
+                var product = await _productCollection.Find(p => p.Id == cart.ProductId).FirstOrDefaultAsync();
+
+                if (product != null)
                 {
-                    cart.Id,
-                    cart.UserId,
-                    cart.ProductId,
-                    cart.Quantity,
-                    ProdDesc = product?.ProdDesc,
-                    ImageUrl = product?.ImageUrl,
-                    ProdUnitPrice = product?.ProdUnitPrice ?? 0
-                });
+                    result.Add(new
+                    {
+                        Id = cart.Id,
+                        ProductId = cart.ProductId,
+                        Quantity = cart.Quantity,
+                        ProdDesc = product.ProdDesc,
+                        ImageUrl = product.ImageUrl,
+                        ProdUnitPrice = product.ProdUnitPrice
+                    });
+                }
             }
 
             return Ok(new { success = true, cart = result });
