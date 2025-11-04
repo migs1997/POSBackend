@@ -4,7 +4,6 @@ using MongoDB.Driver;
 using System;
 using System.Threading.Tasks;
 
-
 namespace POSBackend.Controllers
 {
     [ApiController]
@@ -27,7 +26,6 @@ namespace POSBackend.Controllers
             try
             {
                 var products = await _products.Find(new BsonDocument()).ToListAsync();
-
                 var baseUrl = "https://posbackend-1-o9uk.onrender.com"; // 👈 use your live domain
 
                 var result = products.ConvertAll(product =>
@@ -52,6 +50,11 @@ namespace POSBackend.Controllers
                         ? product["prod_category"].AsString
                         : "Uncategorized";
 
+                    // ✅ Add prod_desc_extra support
+                    var prodDescExtra = product.Contains("prod_desc_extra") && product["prod_desc_extra"] != null
+                        ? product["prod_desc_extra"].AsString
+                        : "";
+
                     string imageUrl = $"{baseUrl}/api/Product/image/{id}";
 
                     return new
@@ -61,6 +64,7 @@ namespace POSBackend.Controllers
                         product_desc = productDesc,
                         prod_unit_price = prodUnitPrice,
                         prod_category = prodCategory,
+                        prod_desc_extra = prodDescExtra, // ✅ Added here
                         image_url = imageUrl
                     };
                 });
@@ -72,8 +76,6 @@ namespace POSBackend.Controllers
                 return BadRequest(new { success = false, message = $"Error fetching products: {ex.Message}" });
             }
         }
-
-
 
         // ✅ Fetch single product image
         [HttpGet("image/{id}")]

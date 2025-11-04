@@ -39,3 +39,5 @@ C:\Users\Smart\source\repos\POSBackend\POSBackend\obj\Debug\net8.0\refint\POSBac
 C:\Users\Smart\source\repos\POSBackend\POSBackend\obj\Debug\net8.0\POSBackend.pdb
 C:\Users\Smart\source\repos\POSBackend\POSBackend\obj\Debug\net8.0\POSBackend.genruntimeconfig.cache
 C:\Users\Smart\source\repos\POSBackend\POSBackend\obj\Debug\net8.0\ref\POSBackend.dll
+C:\Users\Smart\source\repos\POSBackend\POSBackend\obj\Debug\net8.0\POSBackend.sourcelink.json
+C:\Users\Smart\source\repos\POSBackend\POSBackend\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
