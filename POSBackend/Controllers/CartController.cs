@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using POSBackend.Models;
 
@@ -22,7 +21,10 @@ public class CartController : ControllerBase
         if (string.IsNullOrEmpty(userId) || item == null || string.IsNullOrEmpty(item.ProductId))
             return BadRequest(new { success = false, message = "Invalid request" });
 
-        // Check if item already exists for the user
+        // Assign userId from query
+        item.UserId = userId;
+
+        // Check if item already exists for this user
         var filter = Builders<CartItem>.Filter.Eq("UserId", userId) &
                      Builders<CartItem>.Filter.Eq("ProductId", item.ProductId);
 
@@ -35,7 +37,6 @@ public class CartController : ControllerBase
         }
         else
         {
-            item.UserId = userId;
             await _cartCollection.InsertOneAsync(item);
         }
 
@@ -48,5 +49,19 @@ public class CartController : ControllerBase
     {
         var cart = await _cartCollection.Find(c => c.UserId == userId).ToListAsync();
         return Ok(new { success = true, cart });
+    }
+
+    // Optional: remove item from cart
+    [HttpDelete("remove")]
+    public async Task<IActionResult> RemoveFromCart([FromQuery] string userId, [FromQuery] string productId)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(productId))
+            return BadRequest(new { success = false, message = "Invalid request" });
+
+        var filter = Builders<CartItem>.Filter.Eq("UserId", userId) &
+                     Builders<CartItem>.Filter.Eq("ProductId", productId);
+
+        await _cartCollection.DeleteOneAsync(filter);
+        return Ok(new { success = true, message = "Item removed from cart" });
     }
 }
