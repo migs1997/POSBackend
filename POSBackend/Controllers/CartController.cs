@@ -18,13 +18,13 @@ public class CartController : ControllerBase
     [HttpPost("add")]
     public async Task<IActionResult> AddToCart([FromBody] CartItem item)
     {
-        if (item == null || string.IsNullOrEmpty(item.ProductId) || string.IsNullOrEmpty(item.UserId))
+        // Validate required fields
+        if (item == null || string.IsNullOrEmpty(item.UserId) || string.IsNullOrEmpty(item.ProductId))
             return BadRequest(new { success = false, message = "Invalid request. userId and productId are required." });
 
-        item.Id = null; // Ensure MongoDB generates a new ObjectId
-
-        var filter = Builders<CartItem>.Filter.Eq("UserId", item.UserId) &
-                     Builders<CartItem>.Filter.Eq("ProductId", item.ProductId);
+        // Check if item already exists for this user
+        var filter = Builders<CartItem>.Filter.Eq(c => c.UserId, item.UserId) &
+                     Builders<CartItem>.Filter.Eq(c => c.ProductId, item.ProductId);
 
         var existing = await _cartCollection.Find(filter).FirstOrDefaultAsync();
 
@@ -35,11 +35,13 @@ public class CartController : ControllerBase
         }
         else
         {
+            item.Id = null; // ✅ Let MongoDB generate a new ObjectId
             await _cartCollection.InsertOneAsync(item);
         }
 
         return Ok(new { success = true, message = "Item added to cart" });
     }
+
 
 
     // Get user's cart
