@@ -20,5 +20,12 @@ namespace POSBackend.Models
 
         [BsonElement("prod_category")]
         public required string ProdCategory { get; set; }
+
+        [BsonElement("prod_desc_extra")]
+        public string? ProdDescExtra { get; set; }
+
+        // ✅ Add prod_qty for stock
+        [BsonElement("prod_qty")]
+        public int ProdQty { get; set; } = 0; // default 0
     }
 }

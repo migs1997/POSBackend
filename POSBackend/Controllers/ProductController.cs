@@ -19,7 +19,7 @@ namespace POSBackend.Controllers
             _products = database.GetCollection<BsonDocument>("products");
         }
 
-        // ✅ Return all products
+        // ✅ Return all products with prod_qty
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProducts()
         {
@@ -50,10 +50,14 @@ namespace POSBackend.Controllers
                         ? product["prod_category"].AsString
                         : "Uncategorized";
 
-                    // ✅ Add prod_desc_extra support
                     var prodDescExtra = product.Contains("prod_desc_extra") && product["prod_desc_extra"] != null
                         ? product["prod_desc_extra"].AsString
                         : "";
+
+                    // ✅ prod_qty field
+                    var prodQty = product.Contains("prod_qty") && product["prod_qty"] != null
+                        ? product["prod_qty"].AsInt32
+                        : 0;
 
                     string imageUrl = $"{baseUrl}/api/Product/image/{id}";
 
@@ -64,7 +68,8 @@ namespace POSBackend.Controllers
                         product_desc = productDesc,
                         prod_unit_price = prodUnitPrice,
                         prod_category = prodCategory,
-                        prod_desc_extra = prodDescExtra, // ✅ Added here
+                        prod_desc_extra = prodDescExtra,
+                        prod_qty = prodQty, // ✅ included prod_qty
                         image_url = imageUrl
                     };
                 });
@@ -124,5 +129,51 @@ namespace POSBackend.Controllers
                 return BadRequest($"Error fetching image: {ex.Message}");
             }
         }
+
+        // ✅ Place order endpoint using prod_qty
+        [HttpPost("order")]
+        public async Task<IActionResult> PlaceOrder([FromBody] OrderRequest order)
+        {
+            try
+            {
+                if (!ObjectId.TryParse(order.ProductId, out ObjectId objId))
+                    return BadRequest("Invalid product ID.");
+
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", objId);
+                var product = await _products.Find(filter).FirstOrDefaultAsync();
+
+                if (product == null)
+                    return NotFound("Product not found.");
+
+                int prodQty = product.Contains("prod_qty") && product["prod_qty"] != null
+                    ? product["prod_qty"].AsInt32
+                    : 0;
+
+                if (prodQty < order.Quantity)
+                    return BadRequest("Insufficient stock.");
+
+                // Reduce prod_qty
+                var update = Builders<BsonDocument>.Update.Set("prod_qty", prodQty - order.Quantity);
+                await _products.UpdateOneAsync(filter, update);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Order placed successfully",
+                    remainingQty = prodQty - order.Quantity
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Error placing order: {ex.Message}" });
+            }
+        }
+    }
+
+    // DTO for order
+    public class OrderRequest
+    {
+        public string ProductId { get; set; } = string.Empty;
+        public int Quantity { get; set; }
     }
 }
