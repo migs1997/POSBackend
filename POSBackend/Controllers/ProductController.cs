@@ -19,7 +19,7 @@ namespace POSBackend.Controllers
             _products = database.GetCollection<BsonDocument>("products");
         }
 
-        // ✅ Return all products with prod_qty
+        // ✅ Return all products with prod_qty and is_bestseller
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProducts()
         {
@@ -59,6 +59,11 @@ namespace POSBackend.Controllers
                         ? product["prod_qty"].AsInt32
                         : 0;
 
+                    // ✅ is_bestseller field (default false)
+                    var isBestseller = product.Contains("is_bestseller") && product["is_bestseller"] != null
+                        ? product["is_bestseller"].AsBoolean
+                        : false;
+
                     string imageUrl = $"{baseUrl}/api/Product/image/{id}";
 
                     return new
@@ -69,7 +74,8 @@ namespace POSBackend.Controllers
                         prod_unit_price = prodUnitPrice,
                         prod_category = prodCategory,
                         prod_desc_extra = prodDescExtra,
-                        prod_qty = prodQty, // ✅ included prod_qty
+                        prod_qty = prodQty,
+                        is_bestseller = isBestseller,
                         image_url = imageUrl
                     };
                 });

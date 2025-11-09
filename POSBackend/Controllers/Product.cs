@@ -27,5 +27,9 @@ namespace POSBackend.Models
         // ✅ Add prod_qty for stock
         [BsonElement("prod_qty")]
         public int ProdQty { get; set; } = 0; // default 0
+
+        // ✅ Add bestseller field
+        [BsonElement("is_bestseller")]
+        public bool IsBestseller { get; set; } = false; // default false
     }
 }
