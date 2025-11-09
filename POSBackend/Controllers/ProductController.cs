@@ -130,38 +130,32 @@ namespace POSBackend.Controllers
             }
         }
 
-        // ✅ Place order endpoint using prod_qty
+        // ✅ Place an order and reduce stock
         [HttpPost("order")]
         public async Task<IActionResult> PlaceOrder([FromBody] OrderRequest order)
         {
             try
             {
                 if (!ObjectId.TryParse(order.ProductId, out ObjectId objId))
-                    return BadRequest("Invalid product ID.");
+                    return BadRequest(new { success = false, message = "Invalid product ID." });
 
                 var filter = Builders<BsonDocument>.Filter.Eq("_id", objId);
                 var product = await _products.Find(filter).FirstOrDefaultAsync();
 
                 if (product == null)
-                    return NotFound("Product not found.");
+                    return NotFound(new { success = false, message = "Product not found." });
 
-                int prodQty = product.Contains("prod_qty") && product["prod_qty"] != null
-                    ? product["prod_qty"].AsInt32
-                    : 0;
+                int currentQty = product.Contains("prod_qty") ? product["prod_qty"].ToInt32() : 0;
 
-                if (prodQty < order.Quantity)
-                    return BadRequest("Insufficient stock.");
+                if (currentQty < order.Quantity)
+                    return BadRequest(new { success = false, message = "Not enough stock available." });
 
-                // Reduce prod_qty
-                var update = Builders<BsonDocument>.Update.Set("prod_qty", prodQty - order.Quantity);
+                int newQty = currentQty - order.Quantity;
+
+                var update = Builders<BsonDocument>.Update.Set("prod_qty", newQty);
                 await _products.UpdateOneAsync(filter, update);
 
-                return Ok(new
-                {
-                    success = true,
-                    message = "Order placed successfully",
-                    remainingQty = prodQty - order.Quantity
-                });
+                return Ok(new { success = true, message = "Order placed successfully.", remaining_stock = newQty });
             }
             catch (Exception ex)
             {
