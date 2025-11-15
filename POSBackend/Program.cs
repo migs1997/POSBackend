@@ -4,8 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using POSBackend.Services; // ✅ So you can reference IPasswordHasher
-using System;
-
+using POSBackend.Hubs; // ✅ Add this for the SignalR hub
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,29 +18,32 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
 // 2️⃣ Register Password Hasher Service
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-
 // 3️⃣ Configure CORS (to allow mobile/React apps)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
         policy
-            .AllowAnyOrigin()
+            .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowCredentials() // ✅ needed for SignalR
+            .SetIsOriginAllowed(origin => true); // allow all origins for testing
     });
 });
 
 // 4️⃣ Add MVC controllers
 builder.Services.AddControllers();
 
-// 5️⃣ Add Swagger for API documentation
+// 5️⃣ Add SignalR service
+builder.Services.AddSignalR();
+
+// 6️⃣ Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 6️⃣ Developer settings
+// 7️⃣ Developer settings
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -49,13 +51,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// 7️⃣ Optional: disable HTTPS redirect for easier mobile testing
+// 8️⃣ Optional: disable HTTPS redirect for easier mobile testing
 // app.UseHttpsRedirection();
 
-// 8️⃣ Enable CORS before controllers
+// 9️⃣ Enable CORS before controllers
 app.UseCors("AllowAll");
 
-// 9️⃣ Map controllers and run
 app.UseAuthorization();
+
+// 1️⃣ Map controllers
 app.MapControllers();
+
+// 2️⃣ Map SignalR hub
+app.MapHub<OrderHub>("/orderHub"); // ✅ your real-time notifications hub
+
 app.Run();
