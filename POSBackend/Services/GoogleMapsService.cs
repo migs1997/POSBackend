@@ -1,30 +1,31 @@
 ﻿using Newtonsoft.Json.Linq;
-using System.Net.Http;
 
-namespace DeliveryFeeAPI.Services
+namespace POSBackend.Services
 {
     public class GoogleMapsService
     {
+        private readonly HttpClient _client = new();
         private readonly string _apiKey;
-        private readonly HttpClient _client;
 
-        public GoogleMapsService(string apiKey)
+        public GoogleMapsService(IConfiguration config)
         {
-            _apiKey = apiKey;
-            _client = new HttpClient();
+            _apiKey = config["GoogleMaps:ApiKey"]
+                ?? throw new Exception("Google Maps API key missing.");
         }
 
-        public async Task<double> GetDistanceAsync(string origin, string destination)
+        public async Task<double> GetDistanceAsync(double originLat, double originLng, double destLat, double destLng)
         {
-            string url = $"https://maps.googleapis.com/maps/api/distancematrix/json?origins={Uri.EscapeDataString(origin)}&destinations={Uri.EscapeDataString(destination)}&key={_apiKey}&units=metric";
+            string url =
+                $"https://maps.googleapis.com/maps/api/distancematrix/json?origins={originLat},{originLng}&destinations={destLat},{destLng}&key={_apiKey}&units=metric";
 
             var response = await _client.GetStringAsync(url);
             var json = JObject.Parse(response);
 
-            var distanceToken = json["rows"]?.FirstOrDefault()?["elements"]?.FirstOrDefault()?["distance"]?["value"];
-            if (distanceToken == null) throw new Exception("Unable to calculate distance");
+            double distanceMeters =
+                json["rows"]?[0]?["elements"]?[0]?["distance"]?["value"]?.Value<double>()
+                ?? throw new Exception("Distance not found");
 
-            return distanceToken.Value<double>() / 1000; // meters → km
+            return distanceMeters / 1000; // km
         }
     }
 }

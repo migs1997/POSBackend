@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
-using POSBackend.Services; // ✅ So you can reference IPasswordHasher
 using POSBackend.Hubs; // ✅ Add this for the SignalR hub
+using POSBackend.Services; // ✅ So you can reference IPasswordHasher
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +16,11 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
 });
 
 // 2️⃣ Register Password Hasher Service
+// Register backend services
+builder.Services.AddSingleton<GoogleMapsService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
+
 
 // 3️⃣ Configure CORS (to allow mobile/React apps)
 builder.Services.AddCors(options =>

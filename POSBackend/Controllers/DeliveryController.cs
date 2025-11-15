@@ -1,4 +1,6 @@
-﻿using DeliveryFeeAPI.Services;
+﻿using POSBackend.Models;
+using POSBackend.Services;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeliveryFeeAPI.Controllers
@@ -8,25 +10,33 @@ namespace DeliveryFeeAPI.Controllers
     public class CheckoutController : ControllerBase
     {
         private readonly GoogleMapsService _mapsService;
-        private readonly string _storeAddress = "Bucad Residence 865 Libongco 3 St, Manggahan, Rodriguez, Rizal, Philippines";
+        private readonly IConfiguration _config;
 
-        public CheckoutController(GoogleMapsService mapsService)
+        public CheckoutController(GoogleMapsService mapsService, IConfiguration config)
         {
             _mapsService = mapsService;
+            _config = config;
         }
 
         [HttpPost("calculate-shipping")]
-        public async Task<IActionResult> CalculateShipping([FromBody] ShippingRequest request)
+        public async Task<IActionResult> CalculateShipping([FromBody] LocationRequest request)
         {
-            if (string.IsNullOrEmpty(request.CustomerAddress))
-                return BadRequest(new { error = "Customer address is required" });
+            double storeLat = _config.GetValue<double>("GoogleMaps:StoreLat");
+            double storeLng = _config.GetValue<double>("GoogleMaps:StoreLng");
+
+            if (request.Lat == 0 || request.Lng == 0)
+                return BadRequest(new { error = "Invalid customer location" });
 
             try
             {
-                double distanceKm = await _mapsService.GetDistanceAsync(_storeAddress, request.CustomerAddress);
+                double distanceKm = await _mapsService.GetDistanceAsync(
+                    storeLat, storeLng,
+                    request.Lat, request.Lng
+                );
 
-                // Simple shipping fee: 60 for first 3km, +10 per extra km
-                double shippingFee = distanceKm <= 3 ? 60 : 60 + Math.Ceiling(distanceKm - 3) * 10;
+                double shippingFee = distanceKm <= 3
+                    ? 60
+                    : 60 + Math.Ceiling(distanceKm - 3) * 10;
 
                 return Ok(new { distanceKm, shippingFee });
             }
@@ -35,10 +45,5 @@ namespace DeliveryFeeAPI.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
-    }
-
-    public class ShippingRequest
-    {
-        public required string CustomerAddress { get; set; }
     }
 }
