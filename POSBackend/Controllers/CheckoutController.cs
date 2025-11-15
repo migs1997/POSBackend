@@ -10,9 +10,9 @@ namespace POSBackend.Controllers
     {
         private readonly GoogleMapsService _mapsService;
 
-        // Your actual store coordinates
-        private const double StoreLat = 14.728089;
-        private const double StoreLng = 121.142296;
+        // Updated store coordinates
+        private const double StoreLat = 14.728808277383203;
+        private const double StoreLng = 121.14048267183851;
 
         public CheckoutController(GoogleMapsService mapsService)
         {
