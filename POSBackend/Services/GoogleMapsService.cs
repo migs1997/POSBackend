@@ -9,38 +9,50 @@ namespace POSBackend.Services
 
         public GoogleMapsService(IConfiguration config)
         {
-            _apiKey = config["GoogleMaps:ApiKey"]
-                ?? throw new Exception("Google Maps API key missing.");
+            _apiKey = config["OpenRouteService:ApiKey"]
+                ?? throw new Exception("ORS API key missing.");
         }
 
         public async Task<double> GetDistanceAsync(double originLat, double originLng, double destLat, double destLng)
         {
-            string url =
-                $"https://maps.googleapis.com/maps/api/distancematrix/json?origins={originLat},{originLng}&destinations={destLat},{destLng}&key={_apiKey}&units=metric";
+            string url = "https://api.openrouteservice.org/v2/directions/driving-car";
 
-            Console.WriteLine("=== GoogleMapsService GetDistanceAsync called ===");
-            Console.WriteLine("Request URL: " + url);
-
-            try
+            var body = new
             {
-                var response = await _client.GetStringAsync(url);
-                Console.WriteLine("Raw response: " + response);
+                coordinates = new[]
+                {
+                    new[] { originLng, originLat },
+                    new[] { destLng, destLat }
+                }
+            };
 
-                var json = JObject.Parse(response);
+            string jsonBody = Newtonsoft.Json.JsonConvert.SerializeObject(body);
 
-                double distanceMeters =
-                    json["rows"]?[0]?["elements"]?[0]?["distance"]?["value"]?.Value<double>()
-                    ?? throw new Exception("Distance not found in response");
+            Console.WriteLine("=== ORS Distance Request ===");
+            Console.WriteLine("URL: " + url);
+            Console.WriteLine("Body: " + jsonBody);
 
-                Console.WriteLine("Distance found (meters): " + distanceMeters);
-                return distanceMeters / 1000; // km
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error in GetDistanceAsync: " + ex);
-                throw;
-            }
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Add("Authorization", _apiKey);
+            request.Content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await _client.SendAsync(request);
+            string raw = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine("ORS Raw Response: " + raw);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("ORS error: " + raw);
+
+            var json = JObject.Parse(raw);
+
+            double distanceMeters =
+                json["routes"]?[0]?["summary"]?["distance"]?.Value<double>()
+                ?? throw new Exception("Distance not found in ORS response.");
+
+            Console.WriteLine("Distance (meters): " + distanceMeters);
+
+            return distanceMeters / 1000; // convert to KM
         }
-
     }
 }
