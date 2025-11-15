@@ -6,12 +6,12 @@ namespace DeliveryFeeAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DeliveryController : ControllerBase
+    public class CheckoutController : ControllerBase
     {
         private readonly GoogleMapsService _mapsService;
         private readonly string _storeAddress;
 
-        public DeliveryController(IConfiguration configuration)
+        public CheckoutController(IConfiguration configuration)
         {
             _storeAddress = configuration["GoogleMaps:StoreAddress"]
                 ?? throw new Exception("StoreAddress is missing in configuration.");
@@ -22,46 +22,52 @@ namespace DeliveryFeeAPI.Controllers
             _mapsService = new GoogleMapsService(apiKey);
         }
 
-        [HttpGet("fee")]
-        public async Task<IActionResult> GetDeliveryFee([FromQuery] string customerAddress)
+        [HttpPost("calculate-total")]
+        public async Task<IActionResult> CalculateTotal([FromBody] CheckoutRequest request)
         {
-            if (string.IsNullOrWhiteSpace(customerAddress))
-                return BadRequest(new { error = "Customer address is required." });
-
             try
             {
-                // Calculate distance
-                double distance = await _mapsService.GetDistanceAsync(_storeAddress, customerAddress);
+                // Calculate distance and delivery fee
+                double distance = await _mapsService.GetDistanceAsync(_storeAddress, request.CustomerAddress);
+                double deliveryFee = CalculateDeliveryFee(distance);
 
-                // Optional: round distance to 2 decimals
-                distance = Math.Round(distance, 2);
+                // Sum items in checkout
+                double itemsTotal = request.Items.Sum(i => i.Price * i.Quantity);
 
-                // Calculate fee
-                double fee = CalculateDeliveryFee(distance);
+                double total = itemsTotal + deliveryFee;
 
                 return Ok(new
                 {
-                    distance,
-                    fee
+                    itemsTotal,
+                    deliveryFee,
+                    total
                 });
-            }
-            catch (HttpRequestException)
-            {
-                // Network issues or Google API down
-                return StatusCode(503, new { error = "Unable to reach Google Maps API. Please try again later." });
             }
             catch (Exception ex)
             {
-                // API returned invalid data or address not found
                 return BadRequest(new { error = ex.Message });
             }
         }
 
         private double CalculateDeliveryFee(double distance)
         {
-            double baseFee = 60; // Base fee in your currency
+            double baseFee = 50; // Base fee in your currency
             double perKm = 10;   // Fee per km
             return baseFee + (perKm * distance);
         }
     }
+
+    public class CheckoutRequest
+    {
+        public required string CustomerAddress { get; set; }
+        public required List<CheckoutItem> Items { get; set; }
+    }
+
+    public class CheckoutItem
+    {
+        public required string Name { get; set; }
+        public double Price { get; set; }
+        public int Quantity { get; set; }
+    }
+
 }
