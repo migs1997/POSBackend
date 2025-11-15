@@ -1,6 +1,5 @@
 ﻿using DeliveryFeeAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace DeliveryFeeAPI.Controllers
 {
@@ -9,65 +8,37 @@ namespace DeliveryFeeAPI.Controllers
     public class CheckoutController : ControllerBase
     {
         private readonly GoogleMapsService _mapsService;
-        private readonly string _storeAddress;
+        private readonly string _storeAddress = "Bucad Residence 865 Libongco 3 St, Manggahan, Rodriguez, Rizal, Philippines";
 
-        public CheckoutController(IConfiguration configuration)
+        public CheckoutController(GoogleMapsService mapsService)
         {
-            _storeAddress = configuration["GoogleMaps:StoreAddress"]
-                ?? throw new Exception("StoreAddress is missing in configuration.");
-
-            string apiKey = configuration["GoogleMaps:ApiKey"]
-                ?? throw new Exception("Google Maps API key is missing.");
-
-            _mapsService = new GoogleMapsService(apiKey);
+            _mapsService = mapsService;
         }
 
-        [HttpPost("calculate-total")]
-        public async Task<IActionResult> CalculateTotal([FromBody] CheckoutRequest request)
+        [HttpPost("calculate-shipping")]
+        public async Task<IActionResult> CalculateShipping([FromBody] ShippingRequest request)
         {
+            if (string.IsNullOrEmpty(request.CustomerAddress))
+                return BadRequest(new { error = "Customer address is required" });
+
             try
             {
-                // Calculate distance and delivery fee
-                double distance = await _mapsService.GetDistanceAsync(_storeAddress, request.CustomerAddress);
-                double deliveryFee = CalculateDeliveryFee(distance);
+                double distanceKm = await _mapsService.GetDistanceAsync(_storeAddress, request.CustomerAddress);
 
-                // Sum items in checkout
-                double itemsTotal = request.Items.Sum(i => i.Price * i.Quantity);
+                // Simple shipping fee: 60 for first 3km, +10 per extra km
+                double shippingFee = distanceKm <= 3 ? 60 : 60 + Math.Ceiling(distanceKm - 3) * 10;
 
-                double total = itemsTotal + deliveryFee;
-
-                return Ok(new
-                {
-                    itemsTotal,
-                    deliveryFee,
-                    total
-                });
+                return Ok(new { distanceKm, shippingFee });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-
-        private double CalculateDeliveryFee(double distance)
-        {
-            double baseFee = 50; // Base fee in your currency
-            double perKm = 10;   // Fee per km
-            return baseFee + (perKm * distance);
-        }
     }
 
-    public class CheckoutRequest
+    public class ShippingRequest
     {
         public required string CustomerAddress { get; set; }
-        public required List<CheckoutItem> Items { get; set; }
     }
-
-    public class CheckoutItem
-    {
-        public required string Name { get; set; }
-        public double Price { get; set; }
-        public int Quantity { get; set; }
-    }
-
 }
