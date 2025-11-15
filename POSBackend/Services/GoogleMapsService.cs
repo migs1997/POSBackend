@@ -20,10 +20,13 @@ namespace DeliveryFeeAPI.Services
             string url = $"https://maps.googleapis.com/maps/api/geocode/json?address={Uri.EscapeDataString(address)}&key={_apiKey}";
             var response = await _client.GetStringAsync(url);
             var json = JObject.Parse(response);
-            var location = json["results"]?[0]?["geometry"]?["location"];
-            if (location == null) throw new Exception("Address not found.");
-            double lat = (double)location["lat"];
-            double lng = (double)location["lng"];
+
+            var location = json["results"]?.FirstOrDefault()?["geometry"]?["location"];
+            if (location == null || location["lat"] == null || location["lng"] == null)
+                throw new Exception("Address not found.");
+
+            double lat = location["lat"]?.Value<double>() ?? throw new Exception("Latitude not found.");
+            double lng = location["lng"]?.Value<double>() ?? throw new Exception("Longitude not found.");
             return (lat, lng);
         }
 
@@ -33,9 +36,13 @@ namespace DeliveryFeeAPI.Services
             string url = $"https://maps.googleapis.com/maps/api/distancematrix/json?origins={Uri.EscapeDataString(origin)}&destinations={Uri.EscapeDataString(destination)}&key={_apiKey}&units=metric";
             var response = await _client.GetStringAsync(url);
             var json = JObject.Parse(response);
-            var distanceMeters = json["rows"]?[0]?["elements"]?[0]?["distance"]?["value"];
-            if (distanceMeters == null) throw new Exception("Unable to calculate distance.");
-            return ((double)distanceMeters) / 1000; // Convert to km
+
+            var distanceToken = json["rows"]?.FirstOrDefault()?["elements"]?.FirstOrDefault()?["distance"]?["value"];
+            if (distanceToken == null)
+                throw new Exception("Unable to calculate distance.");
+
+            double distanceMeters = distanceToken.Value<double>();
+            return distanceMeters / 1000; // Convert to km
         }
     }
 }
