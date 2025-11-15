@@ -22,7 +22,7 @@ namespace POSBackend.Controllers
         [HttpPost("calculate-shipping")]
         public async Task<IActionResult> CalculateShipping([FromBody] LocationRequest request)
         {
-            // Safe fallback for invalid coordinates
+            // Fallback for invalid coordinates
             if (request.Lat == 0 || request.Lng == 0)
             {
                 return Ok(new { distanceKm = 0, shippingFee = 60 });
@@ -37,6 +37,7 @@ namespace POSBackend.Controllers
 
             return Ok(new { distanceKm, shippingFee });
         }
+
 
     }
 }
