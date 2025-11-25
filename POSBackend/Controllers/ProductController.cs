@@ -14,7 +14,7 @@ namespace POSBackend.Controllers
 
         public ProductController()
         {
-            var client = new MongoClient("mongodb+srv://cantina:admin123@cluster0.jip0f8i.mongodb.net/");
+            var client = new MongoClient("mongodb+srv://cantinamnl:admin1234@cluster0.elfiitq.mongodb.net/cantina?retryWrites=true&w=majority&appName=Cluster0");
             var database = client.GetDatabase("mobapp");
             _products = database.GetCollection<BsonDocument>("products");
         }
