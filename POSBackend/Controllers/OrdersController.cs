@@ -66,18 +66,40 @@ namespace POSBackend.Controllers
         {
             try
             {
-                var orders = await _orders.Find(o => o.UserId == userId).ToListAsync();
+                // Fetch orders for the user
+                var orders = await _orders
+                    .Find(o => o.UserId == userId)
+                    .Project(o => new Order
+                    {
+                        Id = o.Id,
+                        UserId = o.UserId,
+                        Status = o.Status,
+                        CreatedAt = o.CreatedAt,
+                        UpdatedAt = o.UpdatedAt,
+                        Total = o.Total,
+                        PaymentMethod = o.PaymentMethod,
+                        DeliveryOption = o.DeliveryOption,
+                        
+                        ContactNumber = o.ContactNumber,
+                        Barangay = o.Barangay,
+                        City = o.City,
+                        Province = o.Province,
+                        
+                        // ✅ Ensure Items is never null
+                        Items = o.Items ?? new List<OrderItem>()
+                    })
+                    .ToListAsync();
 
-                if (orders == null || orders.Count == 0)
-                    return Ok(new List<Order>()); // return empty array instead of 404
-
-                return Ok(orders);
+                // Always return a list (empty if no orders)
+                return Ok(orders ?? new List<Order>());
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+
 
         // ✅ Cancel order
         [HttpPatch("{userId}/{orderId}/cancel")]
@@ -98,32 +120,6 @@ namespace POSBackend.Controllers
                     return NotFound(new { success = false, message = "Order not found or already cancelled" });
 
                 return Ok(new { success = true, message = "Order cancelled successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-
-        // ✅ Complete order
-        [HttpPatch("{userId}/{orderId}/complete")]
-        public async Task<IActionResult> CompleteOrder(string userId, string orderId)
-        {
-            try
-            {
-                var filter = Builders<Order>.Filter.Eq(o => o.Id, orderId) &
-                             Builders<Order>.Filter.Eq(o => o.UserId, userId);
-
-                var update = Builders<Order>.Update
-                    .Set(o => o.Status, "COMPLETED")
-                    .Set(o => o.UpdatedAt, DateTime.UtcNow);
-
-                var result = await _orders.UpdateOneAsync(filter, update);
-
-                if (result.ModifiedCount == 0)
-                    return NotFound(new { success = false, message = "Order not found or already completed" });
-
-                return Ok(new { success = true, message = "Order completed successfully" });
             }
             catch (Exception ex)
             {
