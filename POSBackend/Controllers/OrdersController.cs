@@ -79,7 +79,6 @@ namespace POSBackend.Controllers
             }
         }
 
-
         // ✅ Cancel order
         [HttpPatch("{userId}/{orderId}/cancel")]
         public async Task<IActionResult> CancelOrder(string userId, string orderId)
@@ -99,6 +98,32 @@ namespace POSBackend.Controllers
                     return NotFound(new { success = false, message = "Order not found or already cancelled" });
 
                 return Ok(new { success = true, message = "Order cancelled successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        // ✅ Complete order
+        [HttpPatch("{userId}/{orderId}/complete")]
+        public async Task<IActionResult> CompleteOrder(string userId, string orderId)
+        {
+            try
+            {
+                var filter = Builders<Order>.Filter.Eq(o => o.Id, orderId) &
+                             Builders<Order>.Filter.Eq(o => o.UserId, userId);
+
+                var update = Builders<Order>.Update
+                    .Set(o => o.Status, "Completed")
+                    .Set(o => o.UpdatedAt, DateTime.UtcNow);
+
+                var result = await _orders.UpdateOneAsync(filter, update);
+
+                if (result.ModifiedCount == 0)
+                    return NotFound(new { success = false, message = "Order not found or already completed" });
+
+                return Ok(new { success = true, message = "Order completed successfully" });
             }
             catch (Exception ex)
             {
