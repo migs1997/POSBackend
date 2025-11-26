@@ -115,7 +115,7 @@ namespace POSBackend.Controllers
                              Builders<Order>.Filter.Eq(o => o.UserId, userId);
 
                 var update = Builders<Order>.Update
-                    .Set(o => o.Status, "Completed")
+                    .Set(o => o.Status, "COMPLETED")
                     .Set(o => o.UpdatedAt, DateTime.UtcNow);
 
                 var result = await _orders.UpdateOneAsync(filter, update);
