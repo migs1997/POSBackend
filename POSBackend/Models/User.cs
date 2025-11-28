@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
+using System.Collections.Generic;
 
 namespace POSBackend.Models
 {
@@ -24,6 +25,9 @@ namespace POSBackend.Models
 
         [BsonElement("barangay")]
         public string Barangay { get; set; } = string.Empty;
+
+        [BsonElement("favorites")]
+        public List<string> Favorites { get; set; } = new();
 
         [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; }
