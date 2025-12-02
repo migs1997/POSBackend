@@ -49,6 +49,9 @@ namespace POSBackend.Controllers
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetCart(string userId)
         {
+            if (string.IsNullOrEmpty(userId))
+                return BadRequest(new { success = false, message = "userId is required" });
+
             var cartItems = await _cartCollection.Find(c => c.UserId == userId).ToListAsync();
 
             // Fetch product details
@@ -67,7 +70,8 @@ namespace POSBackend.Controllers
                         cart.Quantity,
                         ProdDesc = product.ProdDesc,
                         ImageUrl = product.ImageUrl,
-                        ProdUnitPrice = product.ProdUnitPrice
+                        ProdUnitPrice = product.ProdUnitPrice,
+                        ProdQty = product.ProdQty
                     });
                 }
             }
@@ -89,5 +93,33 @@ namespace POSBackend.Controllers
 
             return Ok(new { success = true, message = "Item removed from cart" });
         }
+
+        // Update quantity of a cart item
+        [HttpPatch("update")]
+        public async Task<IActionResult> UpdateQuantity([FromBody] CartItem item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.UserId) || string.IsNullOrEmpty(item.ProductId))
+                return BadRequest(new { success = false, message = "userId and productId are required." });
+
+            var filter = Builders<CartItem>.Filter.Eq(c => c.UserId, item.UserId) &
+                         Builders<CartItem>.Filter.Eq(c => c.ProductId, item.ProductId);
+
+            var existing = await _cartCollection.Find(filter).FirstOrDefaultAsync();
+            if (existing == null)
+                return NotFound(new { success = false, message = "Cart item not found." });
+
+            // Optional: enforce stock limit
+            var product = await _productCollection.Find(p => p.Id == item.ProductId).FirstOrDefaultAsync();
+            int maxQty = product != null ? product.ProdQty : int.MaxValue;
+
+            existing.Quantity = item.Quantity;
+            if (existing.Quantity < 1) existing.Quantity = 1;
+            if (existing.Quantity > maxQty) existing.Quantity = maxQty;
+
+            await _cartCollection.ReplaceOneAsync(filter, existing);
+
+            return Ok(new { success = true, message = "Quantity updated", quantity = existing.Quantity });
+        }
+
     }
 }
