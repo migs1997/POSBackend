@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 1️⃣ Configure MongoDB Client Service
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
-    string connectionString = "mongodb+srv://cantinamnl:admin1234@cluster0.elfiitq.mongodb.net/cantina?retryWrites=true&w=majority&appName=Cluster0";
+    string connectionString = "mongodb+srv://cantina:admin123@cluster0.jip0f8i.mongodb.net/";
     return new MongoClient(connectionString);
 });
 
